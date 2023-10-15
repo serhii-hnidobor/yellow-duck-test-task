@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Observable } from 'rxjs';
-import getTrelloWebhookCallbackUrl from 'src/utils/get-trello-webhhok-callback-url';
+import getTrelloWebhookCallbackUrl from 'src/utils/get-trello-webhook-callback-url';
 import validateTrelloHookOrigin from 'src/utils/validate-trello-webhook';
 
 @Injectable()
@@ -24,11 +24,6 @@ export class TrelloWebhookGuard implements CanActivate {
     const trelloSecret =
       this.configService.getOrThrow<string>('TRELLO_API_SECRET');
 
-    return validateTrelloHookOrigin(
-      request,
-      apiUrl,
-      trelloSecret,
-      hookCallbackUrl,
-    );
+    return validateTrelloHookOrigin(request, trelloSecret, hookCallbackUrl);
   }
 }

@@ -8,10 +8,11 @@ import { AuthCallbackQueryDto } from './dto/callback.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { WebhookEventDto } from './dto/web-hook-callback.dto';
-import getTrelloWebhookCallbackUrl from 'src/utils/get-trello-webhhok-callback-url';
+import getTrelloWebhookCallbackUrl from 'src/utils/get-trello-webhook-callback-url';
 import isUrlSame from 'src/utils/is-url-same';
 import { User } from 'src/users/user.entity';
-import htmlToImage from 'src/utils/html-to-img';
+import tableToImage from 'src/utils/table-to-image';
+import { CTCustomCell, CTColumn } from 'canvas-table';
 
 @Update()
 export class BotService implements OnApplicationBootstrap {
@@ -236,40 +237,67 @@ export class BotService implements OnApplicationBootstrap {
     );
   }
 
-  generateStatTable(
+  generateStatTableData(
     userCardListMap: Record<string, unknown>,
     allUserFromGroup: User[],
   ) {
-    let tableTemplate = `<table border="1"><thead><tr><th>Name</th>`;
+    const statTableData: Array<CTCustomCell[]> = [];
+    const statTableHeaderData = [this.addStyleToTableHeaderValue('Name')];
 
     for (const listName in userCardListMap) {
-      tableTemplate += `<th>${listName}</th>`;
+      const headerValue = this.addStyleToTableHeaderValue(listName);
+      statTableHeaderData.push(headerValue);
     }
-
-    tableTemplate += '</tr></thead><tbody>';
 
     const listNames = Object.keys(userCardListMap);
 
     for (const user of allUserFromGroup) {
-      tableTemplate += `<tr><td>${user.firstName}</td>`;
-
       const values = listNames.map((listName) => {
         const usersListStat = userCardListMap[listName] as Record<
           string,
           number
         >;
 
-        const value = usersListStat[user?.trelloUserId] || 0;
-
-        return `<td>${value}</td>`;
+        return String(usersListStat[user?.trelloUserId] || 0);
       });
 
-      tableTemplate += `${values}</tr>`;
+      const tableRowData = [user.firstName, ...values];
+
+      const styledRowData = this.addStyleToTableValue(tableRowData);
+
+      statTableData.push(styledRowData);
     }
 
-    tableTemplate += '</tbody></table>';
+    return {
+      statTableData,
+      statTableHeaderData,
+    };
+  }
 
-    return tableTemplate;
+  private addStyleToTableValue(values: string[]): CTCustomCell[] {
+    return values.map((value) => ({
+      value,
+      textAlign: 'center',
+      fontSize: 14,
+      fontFamily: 'serif',
+      fontWeight: '400',
+      lineHeight: 1,
+      color: 'black',
+    }));
+  }
+
+  private addStyleToTableHeaderValue(headerValue: string): CTColumn {
+    return {
+      title: headerValue,
+      options: {
+        textAlign: 'center',
+        fontSize: 16,
+        fontWeight: 'bold',
+        fontFamily: 'serif',
+        lineHeight: 1,
+        color: '#222',
+      },
+    };
   }
 
   @Hears(['/get_stat@yellow_duck_test_task_bot', '/get_stat'])
@@ -316,12 +344,15 @@ export class BotService implements OnApplicationBootstrap {
           listNames: ['Done', 'InProgress'],
         });
 
-      const statTableHtml = this.generateStatTable(
+      const { statTableData, statTableHeaderData } = this.generateStatTableData(
         userCardListMap,
         allUserFromGroup,
       );
 
-      const statTableImage = await htmlToImage(statTableHtml);
+      const statTableImage = await tableToImage(
+        statTableData,
+        statTableHeaderData,
+      );
 
       ctx.replyWithPhoto({ source: statTableImage });
     } catch (error) {

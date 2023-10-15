@@ -2,7 +2,6 @@ import crypto from 'crypto';
 
 function validateHookOrigin(
   request: Request,
-  apiUrl: string,
   trelloSecret: string,
   hookCallbackUrl: string,
 ) {

@@ -22,7 +22,7 @@ const config = {
   tsconfig,
   entryPoints,
   outfile,
-  minify: false,
+  minify: true,
   external: [
     '@nestjs/microservice',
     '@nestjs/websockets/socket-module',
@@ -32,6 +32,7 @@ const config = {
     '@nestjs/sequelize/dist/common/sequelize.utils',
     '@nestjs/sequelize',
     '@mikro-orm/core',
+    'canvas',
   ],
 };
 
