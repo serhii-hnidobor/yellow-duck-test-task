@@ -9,7 +9,11 @@ async function htmlToImage(html: string) {
 
     const page = await browser.newPage();
 
-    page.setContent(html);
+    await page.setContent(html);
+
+    await page.waitForEvent('domcontentloaded');
+
+    await page.waitForSelector('body');
 
     const img = await page.screenshot();
 
